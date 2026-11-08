@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int            @id @default(autoincrement())
+  name      String
+  email     String         @unique
+  password  String
+  role      Role           @default(EMPLOYEE)
+  managerId Int?
+  createdAt DateTime       @default(now())
+  leaves    Leave[]
+  balances  LeaveBalance[]
+  manager   User?          @relation("Team", fields: [managerId], references: [id])
+  team      User[]         @relation("Team")
+}
+
+model Leave {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  type      String
+  startDate DateTime
+  endDate   DateTime
+  days      Int
+  reason    String?
+  status    LeaveStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id])
+}
+
+model LeaveBalance {
+  id     Int    @id @default(autoincrement())
+  userId Int
+  type   String
+  total  Int
+  used   Int    @default(0)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, type])
+}
+
+model LeaveType {
+  id              Int     @id @default(autoincrement())
+  name            String  @unique
+  yearlyAllowance Int
+  isPaid          Boolean @default(true)
+}
+
+model PublicHoliday {
+  id   Int      @id @default(autoincrement())
+  name String
+  date DateTime @unique @db.Date
+}
+
+model AppSetting {
+  id                      Int @id @default(1)
+  minimumNoticeDays       Int @default(1)
+  maxTeamMembersOffPerDay Int @default(2)
+}
+
+enum Role {
+  EMPLOYEE
+  MANAGER
+  ADMIN
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
